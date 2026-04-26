@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OrgMind — Карта компетенций</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #18181f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f0f0f5;
+    --muted: #6b6b80;
+    --accent: #7c6dfa;
+
+    --c-dev: #7c6dfa;
+    --c-design: #f06292;
+    --c-pm: #4fc3f7;
+    --c-biz: #81c784;
+    --c-data: #ffb74d;
+    --c-hr: #ba68c8;
+    --c-smm: #f48fb1;
+    --c-lead: #4db6ac;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    position: fixed;
+    left: 0; top: 0; bottom: 0;
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    z-index: 100;
+  }
+
+  .logo {
+    padding: 28px 24px 20px;
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo span { color: var(--accent); }
+
+  .nav {
+    padding: 16px 12px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--muted);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(124,109,250,0.15); color: var(--accent); }
+
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+
+  .sidebar-footer {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  /* ===== MAIN ===== */
+  .main {
+    margin-left: 220px;
+    min-height: 100vh;
+    padding: 32px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .page-header {
+    margin-bottom: 32px;
+  }
+
+  .page-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .page-sub {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+  }
+
+  .card-sm { padding: 16px 20px; }
+
+  /* ===== GRID ===== */
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* ===== STAT CARD ===== */
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    opacity: 0.08;
+    transform: translate(20px, -20px);
+  }
+
+  .stat-card.purple::before { background: var(--c-dev); }
+  .stat-card.pink::before { background: var(--c-design); }
+  .stat-card.blue::before { background: var(--c-pm); }
+  .stat-card.green::before { background: var(--c-biz); }
+
+  .stat-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+  .stat-value { font-family: 'Syne', sans-serif; font-size: 32px; font-weight: 700; margin-top: 4px; }
+  .stat-change { font-size: 12px; margin-top: 4px; }
+  .stat-change.up { color: #81c784; }
+  .stat-change.down { color: #ef9a9a; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: #9585fb; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--border2); }
+
+  .btn-danger {
+    background: rgba(239,83,80,0.15);
+    color: #ef9a9a;
+    border: 1px solid rgba(239,83,80,0.2);
+  }
+  .btn-danger:hover { background: rgba(239,83,80,0.25); }
+
+  .btn-sm { padding: 6px 12px; font-size: 13px; }
+
+  /* ===== BADGE ===== */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+
+  /* ===== SKILL COLORS ===== */
+  .skill-dev    { background: rgba(124,109,250,0.15); color: #a89cfc; border: 1px solid rgba(124,109,250,0.3); }
+  .skill-design { background: rgba(240,98,146,0.15); color: #f48fb1; border: 1px solid rgba(240,98,146,0.3); }
+  .skill-pm     { background: rgba(79,195,247,0.15); color: #81d4fa; border: 1px solid rgba(79,195,247,0.3); }
+  .skill-biz    { background: rgba(129,199,132,0.15); color: #a5d6a7; border: 1px solid rgba(129,199,132,0.3); }
+  .skill-data   { background: rgba(255,183,77,0.15); color: #ffcc80; border: 1px solid rgba(255,183,77,0.3); }
+  .skill-hr     { background: rgba(186,104,200,0.15); color: #ce93d8; border: 1px solid rgba(186,104,200,0.3); }
+  .skill-smm    { background: rgba(244,143,177,0.15); color: #f8bbd0; border: 1px solid rgba(244,143,177,0.3); }
+  .skill-lead   { background: rgba(77,182,172,0.15); color: #80cbc4; border: 1px solid rgba(77,182,172,0.3); }
+
+  /* ===== INPUT ===== */
+  .form-group { margin-bottom: 16px; }
+  .form-label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+  .form-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+
+  select.form-input option { background: var(--surface); }
+
+  /* ===== EMPLOYEE CARD ===== */
+  .employee-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    transition: all 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .employee-card:hover {
+    border-color: var(--border2);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .employee-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .employee-card:hover::after { opacity: 1; }
+
+  .emp-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+  }
+
+  .emp-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .emp-role { font-size: 13px; color: var(--muted); margin-top: 2px; }
+  .emp-dept { font-size: 12px; margin-top: 8px; }
+
+  .emp-skills { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+
+  .emp-score-bar {
+    margin-top: 14px;
+    height: 3px;
+    background: var(--surface2);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .emp-score-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1s ease;
+  }
+
+  .activity-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .active-dot { background: #81c784; animation: pulse 2s infinite; }
+  .away-dot { background: #ffb74d; }
+  .offline-dot { background: var(--muted); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+  }
+
+  /* ===== MODAL ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    width: 520px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: modalIn 0.25s ease;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+
+  .modal-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+  }
+  .modal-close:hover { color: var(--text); border-color: var(--border2); }
+
+  /* ===== SKILL SELECTOR ===== */
+  .skill-selector { display: flex; flex-wrap: wrap; gap: 8px; }
+  .skill-toggle {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.2s;
+  }
+  .skill-toggle.selected { color: white; border-color: transparent; }
+
+  /* ===== COMPETENCY MAP ===== */
+  #map-canvas {
+    width: 100%;
+    height: 600px;
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .map-node {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    cursor: pointer;
+    transition: all 0.5s ease;
+  }
+
+  .map-node-inner {
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    color: white;
+    transition: all 0.3s;
+    border: 3px solid rgba(255,255,255,0.2);
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  }
+
+  .map-node:hover .map-node-inner {
+    transform: scale(1.15);
+    border-color: rgba(255,255,255,0.6);
+  }
+
+  .map-node-label {
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+    pointer-events: none;
+    font-weight: 500;
+  }
+
+  .map-cluster {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: rgba(255,255,255,0.5);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    pointer-events: none;
+  }
+
+  .map-legend {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ===== ACTIVITY FEED ===== */
+  .activity-item {
+    display: flex;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .activity-text { font-size: 14px; }
+  .activity-time { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ===== LEADERBOARD ===== */
+  .lb-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    width: 28px;
+    text-align: center;
+    color: var(--muted);
+  }
+  .lb-rank.gold { color: #ffd54f; }
+  .lb-rank.silver { color: #b0bec5; }
+  .lb-rank.bronze { color: #a1887f; }
+  .lb-info { flex: 1; }
+  .lb-name { font-size: 14px; font-weight: 500; }
+  .lb-skill { font-size: 12px; color: var(--muted); }
+  .lb-score { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 16px; }
+
+  /* ===== RADAR CHART (canvas) ===== */
+  .radar-wrap { display: flex; justify-content: center; }
+
+  /* ===== TOP BAR ===== */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+  }
+
+  .search-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .search-box input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    width: 200px;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+
+  /* ===== TABS ===== */
+  .tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 4px; width: fit-content; margin-bottom: 24px; }
+  .tab {
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    color: var(--muted);
+    transition: all 0.2s;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .tab.active { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+
+  /* ===== PROGRESS BARS ===== */
+  .progress-bar {
+    height: 6px;
+    background: var(--surface2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1.2s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* ===== DETAIL PANEL ===== */
+  .detail-modal .modal { width: 600px; }
+
+  /* ===== TOAST ===== */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 14px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { border-color: rgba(129,199,132,0.3); }
+  .toast.error { border-color: rgba(239,83,80,0.3); }
+
+  /* ===== SCROLLBAR ===== */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ===== LIVE TICKER ===== */
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(129,199,132,0.1);
+    border: 1px solid rgba(129,199,132,0.25);
+    border-radius: 20px;
+    font-size: 12px;
+    color: #a5d6a7;
+  }
+  .live-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: #81c784;
+    border-radius: 50%;
+    animation: pulse 1.5s infinite;
+  }
+
+  /* ===== SPARKLINE ===== */
+  .sparkline { display: flex; align-items: flex-end; gap: 3px; height: 32px; }
+  .spark-bar { width: 6px; border-radius: 3px; background: var(--accent); opacity: 0.4; transition: opacity 0.2s; }
+  .spark-bar.active { opacity: 1; }
+
+  /* ===== SECTION TITLE ===== */
+  .section-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .employees-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+  }
+  .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state-text { font-size: 16px; margin-bottom: 8px; color: var(--text); font-family: 'Syne', sans-serif; }
+
+  /* skill level input */
+  .skill-level-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .skill-level-name { flex: 1; font-size: 13px; }
+  .skill-level-stars { display: flex; gap: 4px; }
+  .star {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.15s;
+  }
+  .star.filled { background: var(--accent); border-color: var(--accent); }
+
+  /* map tooltip */
+  .map-tooltip {
+    position: absolute;
+    background: rgba(10,10,15,0.95);
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 10;
+    min-width: 160px;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .map-tooltip.visible { opacity: 1; }
+
+  .heatmap-cell {
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 8px;
+    transition: all 0.3s;
+    cursor: pointer;
+  }
+  .heatmap-cell:hover { transform: scale(1.05); }
+  .heatmap-val { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; }
+  .heatmap-lbl { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 4px; text-align: center; }
+
+  .gradient-text {
+    background: linear-gradient(135deg, var(--accent), #f06292);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">Org<span>Mind</span></div>
+  <div class="nav">
+    <button class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">⬡</span> Дашборд
+    </button>
+    <button class="nav-item" onclick="showPage('employees')">
+      <span class="nav-icon">◈</span> Сотрудники
+    </button>
+    <button class="nav-item" onclick="showPage('map')">
+      <span class="nav-icon">◉</span> Карта компетенций
+    </button>
+    <button class="nav-item" onclick="showPage('analytics')">
+      <span class="nav-icon">◎</span> Аналитика
+    </button>
+    <button class="nav-item" onclick="showPage('activity')">
+      <span class="nav-icon">◈</span> Активность
+    </button>
+  </div>
+  <div class="sidebar-footer">
+    <div class="live-badge" style="margin-bottom:8px">Симуляция активна</div>
+    <div style="margin-top:8px;font-size:11px">v1.0 — OrgMind</div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- ===== DASHBOARD ===== -->
+  <div class="page active" id="page-dashboard">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Дашборд <span class="gradient-text">организации</span></div>
+        <div class="page-sub" id="dash-date"></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="live-badge">Live</div>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Добавить сотрудника</button>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="stat-card purple">
+        <div class="stat-label">Всего сотрудников</div>
+        <div class="stat-value" id="stat-total">0</div>
+        <div class="stat-change up" id="stat-active-count">↑ 0 активны сейчас</div>
+      </div>
+      <div class="stat-card pink">
+        <div class="stat-label">Навыков в базе</div>
+        <div class="stat-value" id="stat-skills">0</div>
+        <div class="stat-change" style="color:var(--muted)">уникальных компетенций</div>
+      </div>
+      <div class="stat-card blue">
+        <div class="stat-label">Ср. продуктивность</div>
+        <div class="stat-value" id="stat-prod">0%</div>
+        <div class="stat-change up" id="stat-prod-change">сегодня</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Отделов</div>
+        <div class="stat-value" id="stat-depts">0</div>
+        <div class="stat-change" style="color:var(--muted)">подразделений</div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-title">
+          Топ сотрудников сегодня
+          <span class="live-badge">Live</span>
+        </div>
+        <div id="leaderboard-list"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Активность по навыкам</div>
+        <div id="skill-heatmap" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:24px" class="card">
+      <div class="section-title">
+        Последние события
+        <button class="btn btn-ghost btn-sm" onclick="generateActivity()">Обновить</button>
+      </div>
+      <div id="activity-feed"></div>
+    </div>
+  </div>
+
+  <!-- ===== EMPLOYEES ===== -->
+  <div class="page" id="page-employees">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Сотрудники</div>
+        <div class="page-sub">База знаний и компетенций команды</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="search-box">
+          <span>⌕</span>
+          <input type="text" placeholder="Поиск..." oninput="filterEmployees(this.value)" id="emp-search">
+        </div>
+        <button class="btn btn-primary" onclick="openAddModal()">+ Добавить</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" onclick="filterByDept('all', this)">Все</button>
+      <button class="tab" onclick="filterByDept('Разработка', this)">Разработка</button>
+      <button class="tab" onclick="filterByDept('Дизайн', this)">Дизайн</button>
+      <button class="tab" onclick="filterByDept('Маркетинг', this)">Маркетинг</button>
+      <button class="tab" onclick="filterByDept('Продажи', this)">Продажи</button>
+      <button class="tab" onclick="filterByDept('HR', this)">HR</button>
+      <button class="tab" onclick="filterByDept('Аналитика', this)">Аналитика</button>
+    </div>
+
+    <div class="employees-grid" id="employees-grid"></div>
+  </div>
+
+  <!-- ===== MAP ===== -->
+  <div class="page" id="page-map">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Карта компетенций</div>
+        <div class="page-sub">Визуализация навыков всей организации</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" onclick="renderMap()">↺ Перегенерировать</button>
+      </div>
+    </div>
+
+    <div id="map-canvas">
+      <div class="map-tooltip" id="map-tooltip"></div>
+    </div>
+  </div>
+
+  <!-- ===== ANALYTICS ===== -->
+  <div class="page" id="page-analytics">
+    <div class="page-header">
+      <div class="page-title">Аналитика</div>
+      <div class="page-sub">Статистика компетенций и производительности</div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:24px" id="analytics-cards"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <div class="section-title">Распределение по навыкам</div>
+        <div id="skill-distribution"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Производительность по отделам</div>
+        <canvas id="dept-chart" height="280"></canvas>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px">
+      <div class="section-title">Матрица компетенций</div>
+      <div style="overflow-x:auto">
+        <table id="competency-matrix" style="width:100%;border-collapse:collapse;font-size:13px"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ACTIVITY ===== -->
+  <div class="page" id="page-activity">
+    <div class="topbar">
+      <div>
+        <div class="page-title">Симуляция активности</div>
+        <div class="page-sub">Реальное время работы команды</div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <div class="live-badge">Симуляция активна</div>
+        <button class="btn btn-ghost" id="sim-toggle" onclick="toggleSimulation()">⏸ Пауза</button>
+      </div>
+    </div>
+
+    <div class="grid-3" style="margin-bottom:24px">
+      <div class="card">
+        <div class="section-title">Сейчас онлайн</div>
+        <div id="online-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Задачи дня</div>
+        <div id="tasks-list" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+      <div class="card">
+        <div class="section-title">Производительность</div>
+        <canvas id="prod-chart" height="200"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">
+        Живая лента событий
+        <span id="event-count" style="font-size:13px;color:var(--muted);font-weight:400">0 событий</span>
+      </div>
+      <div id="live-feed" style="max-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:0"></div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ADD EMPLOYEE MODAL -->
+<div class="modal-backdrop" id="add-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title-text">Новый сотрудник</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <input type="hidden" id="edit-id">
+
+    <div class="form-group">
+      <label class="form-label">Имя и фамилия</label>
+      <input class="form-input" id="inp-name" placeholder="Иван Иванов">
+    </div>
+    <div class="grid-2" style="margin-bottom:0">
+      <div class="form-group">
+        <label class="form-label">Должность</label>
+        <input class="form-input" id="inp-role" placeholder="Frontend Developer">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Отдел</label>
+        <select class="form-input" id="inp-dept">
+          <option>Разработка</option>
+          <option>Дизайн</option>
+          <option>Маркетинг</option>
+          <option>Продажи</option>
+          <option>HR</option>
+          <option>Аналитика</option>
+          <option>Управление</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Компетенции (выберите несколько)</label>
+      <div class="skill-selector" id="skill-selector"></div>
+    </div>
+
+    <div id="skill-levels" style="margin-bottom:16px"></div>
+
+    <div style="display:flex;gap:10px;justify-content:flex-end">
+      <button class="btn btn-ghost" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveEmployee()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMPLOYEE DETAIL MODAL -->
+<div class="modal-backdrop detail-modal" id="detail-modal">
+  <div class="modal" style="width:580px">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-name">Сотрудник</div>
+      <button class="modal-close" onclick="closeDetailModal()">✕</button>
+    </div>
+    <div id="detail-content"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ============ DATA ============
+const SKILLS = [
+  { id: 'dev',    name: 'Разработка',       color: '#7c6dfa', icon: '⌨' },
+  { id: 'design', name: 'Дизайн',           color: '#f06292', icon: '◈' },
+  { id: 'pm',     name: 'Проект-менеджмент',color: '#4fc3f7', icon: '◉' },
+  { id: 'biz',    name: 'Бизнес/Продажи',   color: '#81c784', icon: '◎' },
+  { id: 'data',   name: 'Аналитика данных', color: '#ffb74d', icon: '◐' },
+  { id: 'hr',     name: 'HR/Рекрутинг',     color: '#ba68c8', icon: '◑' },
+  { id: 'smm',    name: 'SMM/Маркетинг',    color: '#f48fb1', icon: '◒' },
+  { id: 'lead',   name: 'Тимлид/Менеджмент',color: '#4db6ac', icon: '◓' },
+];
+
+const DEPT_COLORS = {
+  'Разработка': '#7c6dfa', 'Дизайн': '#f06292', 'Маркетинг': '#f48fb1',
+  'Продажи': '#81c784', 'HR': '#ba68c8', 'Аналитика': '#ffb74d', 'Управление': '#4db6ac'
+};
+
+const AVATARS_COLORS = ['#7c6dfa','#f06292','#4fc3f7','#81c784','#ffb74d','#ba68c8','#f48fb1','#4db6ac'];
+
+let employees = JSON.parse(localStorage.getItem('orgmind_employees') || '[]');
+let activities = JSON.parse(localStorage.getItem('orgmind_activities') || '[]');
+let simRunning = true;
+let simInterval = null;
+let currentDeptFilter = 'all';
+let currentSearch = '';
+let eventCount = 0;
+let prodChartInstance = null;
+let deptChartInstance = null;
+let prodData = [65,72,68,75,70,78,74];
+
+function save() {
+  localStorage.setItem('orgmind_employees', JSON.stringify(employees));
+}
+
+function saveActivities() {
+  localStorage.setItem('orgmind_activities', JSON.stringify(activities.slice(-50)));
+}
+
+// ============ SEED DATA ============
+function seedData() {
+  if (employees.length > 0) return;
+  const names = [
+    ['Алексей Петров', 'Senior Frontend Dev', 'Разработка', ['dev','lead'], {dev:5,lead:3}],
+    ['Мария Соколова', 'UX/UI Designer', 'Дизайн', ['design','pm'], {design:5,pm:2}],
+    ['Дмитрий Козлов', 'Product Manager', 'Управление', ['pm','lead','biz'], {pm:5,lead:4,biz:3}],
+    ['Анна Новикова', 'Data Analyst', 'Аналитика', ['data','dev'], {data:5,dev:2}],
+    ['Сергей Морозов', 'Backend Developer', 'Разработка', ['dev','data'], {dev:4,data:3}],
+    ['Екатерина Волкова', 'HR Manager', 'HR', ['hr','lead'], {hr:5,lead:3}],
+    ['Иван Лебедев', 'Sales Manager', 'Продажи', ['biz','smm'], {biz:4,smm:3}],
+    ['Ольга Зайцева', 'SMM Specialist', 'Маркетинг', ['smm','design'], {smm:5,design:2}],
+    ['Николай Попов', 'DevOps Engineer', 'Разработка', ['dev','data'], {dev:4,data:2}],
+    ['Татьяна Орлова', 'Business Analyst', 'Аналитика', ['biz','data','pm'], {biz:3,data:4,pm:3}],
+  ];
+  names.forEach(([name,role,dept,skills,levels], i) => {
+    employees.push({
+      id: Date.now() + i,
+      name, role, dept, skills, levels,
+      color: AVATARS_COLORS[i % AVATARS_COLORS.length],
+      productivity: Math.floor(Math.random()*30)+60,
+      status: ['active','active','active','away','offline'][Math.floor(Math.random()*5)],
+      joinDate: new Date(Date.now() - Math.random()*365*24*3600*1000).toLocaleDateString('ru'),
+    });
+  });
+  save();
+}
+
+// ============ NAV ============
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'employees') renderEmployees();
+  if (id === 'map') renderMap();
+  if (id === 'analytics') renderAnalytics();
+  if (id === 'activity') renderActivity();
+}
+
+// ============ DASHBOARD ============
+function renderDashboard() {
+  const active = employees.filter(e => e.status === 'active');
+  const avgProd = employees.length ? Math.round(employees.reduce((s,e) => s+e.productivity, 0) / employees.length) : 0;
+  const depts = new Set(employees.map(e => e.dept)).size;
+  const skillCount = SKILLS.filter(s => employees.some(e => e.skills.includes(s.id))).length;
+
+  document.getElementById('stat-total').textContent = employees.length;
+  document.getElementById('stat-active-count').textContent = `↑ ${active.length} активны сейчас`;
+  document.getElementById('stat-skills').textContent = skillCount;
+  document.getElementById('stat-prod').textContent = avgProd + '%';
+  document.getElementById('stat-depts').textContent = depts;
+
+  const now = new Date();
+  document.getElementById('dash-date').textContent = now.toLocaleDateString('ru', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  renderLeaderboard();
+  renderSkillHeatmap();
+  renderActivityFeed();
+}
+
+function renderLeaderboard() {
+  const sorted = [...employees].sort((a,b) => b.productivity - a.productivity).slice(0,5);
+  const el = document.getElementById('leaderboard-list');
+  if (!sorted.length) { el.innerHTML = '<div style="color:var(--muted);font-size:14px;padding:8px 0">Нет сотрудников</div>'; return; }
+  el.innerHTML = sorted.map((e,i) => {
+    const rankClass = i===0?'gold':i===1?'silver':i===2?'bronze':'';
+    const rankEmoji = i===0?'①':i===1?'②':i===2?'③':(i+1);
+    const skill = e.skills[0] ? SKILLS.find(s=>s.id===e.skills[0]) : null;
+    const bars = Array.from({length:7}, (_,j) => {
+      const h = Math.floor(Math.random()*80)+20;
+      return `<div class="spark-bar ${j===6?'active':''}" style="height:${h}%;background:${e.color}"></div>`;
+    }).join('');
+    return `<div class="lb-row">
+      <div class="lb-rank ${rankClass}">${rankEmoji}</div>
+      <div class="emp-avatar" style="width:32px;height:32px;background:${e.color}20;color:${e.color};font-size:12px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700;flex-shrink:0">${initials(e.name)}</div>
+      <div class="lb-info">
+        <div class="lb-name">${e.name}</div>
+        <div class="lb-skill">${skill?skill.name:'—'}</div>
+      </div>
+      <div class="sparkline">${bars}</div>
+      <div class="lb-score" style="color:${e.color}">${e.productivity}%</div>
+    </div>`;
+  }).join('');
+}
+
+function renderSkillHeatmap() {
+  const el = document.getElementById('skill-heatmap');
+  el.innerHTML = SKILLS.map(s => {
+    const count = employees.filter(e=>e.skills.includes(s.id)).length;
+    const intensity = Math.min(count/Math.max(employees.length,1), 1);
+    const alpha = 0.1 + intensity * 0.5;
+    return `<div class="heatmap-cell" style="background:${s.color}${Math.round(alpha*255).toString(16).padStart(2,'0')};border:1px solid ${s.color}40" onclick="">
+      <div style="font-size:20px">${s.icon}</div>
+      <div class="heatmap-val" style="color:${s.color}">${count}</div>
+      <div class="heatmap-lbl">${s.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderActivityFeed() {
+  const events = generateEvents(5);
+  const el = document.getElementById('activity-feed');
+  el.innerHTML = events.map(ev => `
+    <div class="activity-item">
+      <div class="activity-icon" style="background:${ev.color}20;color:${ev.color}">${ev.icon}</div>
+      <div>
+        <div class="activity-text">${ev.text}</div>
+        <div class="activity-time">${ev.time}</div>
+      </div>
+    </div>`).join('');
+}
+
+function generateEvents(n) {
+  if (!employees.length) return [];
+  const types = [
+    (e) => ({ icon:'◈', color:'#7c6dfa', text:`<b>${e.name}</b> завершил(а) задачу по ${randSkill(e)}` }),
+    (e) => ({ icon:'◉', color:'#4fc3f7', text:`<b>${e.name}</b> обновил(а) документацию` }),
+    (e) => ({ icon:'◎', color:'#81c784', text:`<b>${e.name}</b> закрыл(а) сделку` }),
+    (e) => ({ icon:'◐', color:'#ffb74d', text:`<b>${e.name}</b> провёл(а) анализ данных` }),
+    (e) => ({ icon:'◑', color:'#f06292', text:`<b>${e.name}</b> завершил(а) дизайн макет` }),
+    (e) => ({ icon:'◒', color:'#f48fb1', text:`<b>${e.name}</b> опубликовал(а) пост` }),
+  ];
+  const times = ['только что','2 мин назад','5 мин назад','12 мин назад','18 мин назад','25 мин назад','30 мин назад','1 час назад'];
+  return Array.from({length:n}, (_,i) => {
+    const e = employees[Math.floor(Math.random()*employees.length)];
+    const t = types[Math.floor(Math.random()*types.length)](e);
+    return { ...t, time: times[i] || times[times.length-1] };
+  });
+}
+
+function randSkill(e) {
+  const skill = e.skills[Math.floor(Math.random()*e.skills.length)];
+  return SKILLS.find(s=>s.id===skill)?.name || 'разработке';
+}
+
+function generateActivity() { renderActivityFeed(); }
+
+// ============ EMPLOYEES ============
+function renderEmployees() {
+  const filtered = employees.filter(e => {
+    const matchDept = currentDeptFilter === 'all' || e.dept === currentDeptFilter;
+    const matchSearch = !currentSearch || e.name.toLowerCase().includes(currentSearch.toLowerCase()) || e.role.toLowerCase().includes(currentSearch.toLowerCase());
+    return matchDept && matchSearch;
+  });
+
+  const grid = document.getElementById('employees-grid');
+  if (!filtered.length) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="empty-state-icon">◎</div>
+      <div class="empty-state-text">Сотрудников не найдено</div>
+      <div style="color:var(--muted);font-size:14px;margin-bottom:16px">Добавьте первого сотрудника</div>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Добавить</button>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(e => {
+    const skillBadges = e.skills.slice(0,3).map(sid => {
+      const s = SKILLS.find(x=>x.id===sid);
+      return s ? `<span class="badge skill-${sid}">${s.icon} ${s.name}</span>` : '';
+    }).join('');
+    const statusDot = e.status === 'active' ? 'active-dot' : e.status === 'away' ? 'away-dot' : 'offline-dot';
+    const statusLabel = e.status === 'active' ? 'Онлайн' : e.status === 'away' ? 'Отошёл' : 'Офлайн';
+    return `<div class="employee-card" onclick="openDetailModal(${e.id})" style="border-top:3px solid ${e.color}20">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div class="emp-avatar" style="background:${e.color}20;color:${e.color}">${initials(e.name)}</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditModal(${e.id})">✎</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteEmployee(${e.id})">✕</button>
+        </div>
+      </div>
+      <div class="emp-name" style="margin-top:8px">${e.name}</div>
+      <div class="emp-role">${e.role}</div>
+      <div style="display:flex;align-items:center;gap:4px;margin-top:6px;font-size:12px;color:var(--muted)">
+        <span class="activity-dot ${statusDot}"></span>${statusLabel} · ${e.dept}
+      </div>
+      <div class="emp-skills">${skillBadges}${e.skills.length>3?`<span style="font-size:12px;color:var(--muted)">+${e.skills.length-3}</span>`:''}</div>
+      <div class="emp-score-bar"><div class="emp-score-fill" style="width:${e.productivity}%;background:${e.color}"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:4px;font-size:12px;color:var(--muted)">
+        <span>Продуктивность</span><span style="color:${e.color}">${e.productivity}%</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterEmployees(val) {
+  currentSearch = val;
+  renderEmployees();
+}
+
+function filterByDept(dept, el) {
+  currentDeptFilter = dept;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderEmployees();
+}
+
+// ============ MAP ============
+function renderMap() {
+  const canvas = document.getElementById('map-canvas');
+  const w = canvas.offsetWidth;
+  const h = canvas.offsetHeight;
+
+  // Clear
+  canvas.querySelectorAll('.map-node,.map-cluster,.map-ring').forEach(el => el.remove());
+
+  if (!employees.length) {
+    canvas.innerHTML += `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;color:var(--muted)">
+      <div style="font-size:32px">◎</div>
+      <div style="margin-top:8px">Добавьте сотрудников для отображения карты</div>
+    </div>`;
+    return;
+  }
+
+  // Draw skill clusters in background
+  const clusterPositions = {
+    dev:    { x: w*0.25, y: h*0.28 },
+    design: { x: w*0.72, y: h*0.22 },
+    pm:     { x: w*0.50, y: h*0.50 },
+    biz:    { x: w*0.75, y: h*0.72 },
+    data:   { x: w*0.25, y: h*0.72 },
+    hr:     { x: w*0.10, y: h*0.50 },
+    smm:    { x: w*0.88, y: h*0.48 },
+    lead:   { x: w*0.50, y: h*0.18 },
+  };
+
+  SKILLS.forEach(s => {
+    const pos = clusterPositions[s.id];
+    const count = employees.filter(e=>e.skills.includes(s.id)).length;
+    if (!count) return;
+
+    // Draw ring
+    const ring = document.createElement('div');
+    ring.className = 'map-ring';
+    const r = 60 + count * 14;
+    ring.style.cssText = `position:absolute;left:${pos.x}px;top:${pos.y}px;width:${r*2}px;height:${r*2}px;transform:translate(-50%,-50%);border-radius:50%;border:1px dashed ${s.color}30;background:${s.color}06;`;
+    canvas.insertBefore(ring, canvas.firstChild);
+
+    // Cluster label
+    const cl = document.createElement('div');
+    cl.className = 'map-cluster';
+    cl.style.cssText = `left:${pos.x}px;top:${pos.y - r - 16}px;color:${s.color};font-size:11px`;
+    cl.textContent = s.name;
+    canvas.appendChild(cl);
+  });
+
+  // Position employees
+  const placed = {};
+  employees.forEach(e => {
+    // Find primary skill cluster
+    const primarySkill = e.skills[0];
+    let base = clusterPositions[primarySkill] || { x: w*0.5, y: h*0.5 };
+
+    // Spread within cluster
+    let x, y, attempts = 0;
+    do {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 20 + Math.random() * 55;
+      x = base.x + Math.cos(angle) * dist;
+      y = base.y + Math.sin(angle) * dist;
+      x = Math.max(40, Math.min(w-40, x));
+      y = Math.max(40, Math.min(h-60, y));
+      attempts++;
+    } while (attempts < 20 && Object.values(placed).some(p => Math.hypot(p.x-x,p.y-y) < 50));
+
+    placed[e.id] = {x, y};
+
+    // Size by skill level
+    const level = e.levels ? (e.levels[primarySkill] || 3) : 3;
+    const size = 32 + level * 5;
+
+    const node = document.createElement('div');
+    node.className = 'map-node';
+    node.style.cssText = `left:${x}px;top:${y}px`;
+    node.dataset.id = e.id;
+
+    // Glow ring for active users
+    const glowStyle = e.status === 'active' ? `box-shadow:0 0 0 4px ${e.color}30,0 0 20px ${e.color}40` : '';
+
+    node.innerHTML = `
+      <div class="map-node-inner" style="width:${size}px;height:${size}px;background:${e.color};font-size:${size>44?14:11}px;${glowStyle}">
+        ${initials(e.name)}
+      </div>
+      <div class="map-node-label">${e.name.split(' ')[0]}</div>`;
+
+    node.addEventListener('mouseenter', (ev) => showMapTooltip(ev, e, x, y, h));
+    node.addEventListener('mouseleave', () => hideMapTooltip());
+    node.addEventListener('click', () => openDetailModal(e.id));
+
+    canvas.appendChild(node);
+  });
+
+  // Draw legend
+  let legend = canvas.querySelector('.map-legend');
+  if (!legend) {
+    legend = document.createElement('div');
+    legend.className = 'map-legend';
+    canvas.appendChild(legend);
+  }
+  legend.innerHTML = SKILLS.filter(s=>employees.some(e=>e.skills.includes(s.id))).map(s =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${s.color}"></div>${s.name}</div>`
+  ).join('');
+}
+
+function showMapTooltip(ev, e, nx, ny, ch) {
+  const tt = document.getElementById('map-tooltip');
+  const skillNames = e.skills.map(sid => SKILLS.find(s=>s.id===sid)?.name).filter(Boolean);
+  const statusLabel = e.status === 'active' ? '🟢 Онлайн' : e.status === 'away' ? '🟡 Отошёл' : '⚫ Офлайн';
+  tt.innerHTML = `
+    <div style="font-weight:600;margin-bottom:4px;color:${e.color}">${e.name}</div>
+    <div style="color:var(--muted);font-size:12px;margin-bottom:6px">${e.role} · ${e.dept}</div>
+    <div style="font-size:11px;margin-bottom:6px">${statusLabel}</div>
+    <div style="font-size:11px;color:var(--muted)">Навыки: ${skillNames.join(', ')}</div>
+    <div style="font-size:12px;margin-top:6px">Продуктивность: <b style="color:${e.color}">${e.productivity}%</b></div>`;
+
+  let tx = nx + 20, ty = ny - 60;
+  if (tx + 180 > document.getElementById('map-canvas').offsetWidth) tx = nx - 180;
+  if (ty < 0) ty = ny + 20;
+  tt.style.left = tx + 'px';
+  tt.style.top = ty + 'px';
+  tt.classList.add('visible');
+}
+
+function hideMapTooltip() {
+  document.getElementById('map-tooltip').classList.remove('visible');
+}
+
+// ============ ANALYTICS ============
+function renderAnalytics() {
+  // Summary cards
+  const avgProd = employees.length ? Math.round(employees.reduce((s,e)=>s+e.productivity,0)/employees.length) : 0;
+  const topSkill = SKILLS.map(s=>({s,n:employees.filter(e=>e.skills.includes(s.id)).length})).sort((a,b)=>b.n-a.n)[0];
+  const topDept = Object.entries(employees.reduce((acc,e)=>{acc[e.dept]=(acc[e.dept]||0)+1;return acc;},{})).sort((a,b)=>b[1]-a[1])[0];
+
+  document.getElementById('analytics-cards').innerHTML = [
+    {label:'Ср. продуктивность',val:avgProd+'%',sub:'по всей команде',color:'#7c6dfa'},
+    {label:'Топ навык',val:topSkill?topSkill.s.name:'—',sub:topSkill?topSkill.n+' сотрудников':'',color:'#f06292'},
+    {label:'Крупнейший отдел',val:topDept?topDept[0]:'—',sub:topDept?topDept[1]+' чел.':'',color:'#4fc3f7'},
+  ].map(c=>`<div class="card" style="border-top:3px solid ${c.color}">
+    <div class="stat-label">${c.label}</div>
+    <div style="font-family:Syne,sans-serif;font-size:24px;font-weight:700;margin:8px 0;color:${c.color}">${c.val}</div>
+    <div style="font-size:13px;color:var(--muted)">${c.sub}</div>
+  </div>`).join('');
+
+  // Skill distribution bars
+  const distEl = document.getElementById('skill-distribution');
+  const maxCount = Math.max(...SKILLS.map(s=>employees.filter(e=>e.skills.includes(s.id)).length), 1);
+  distEl.innerHTML = SKILLS.map(s => {
+    const n = employees.filter(e=>e.skills.includes(s.id)).length;
+    const pct = Math.round(n/maxCount*100);
+    return `<div style="margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>${s.icon} ${s.name}</span>
+        <span style="color:${s.color};font-weight:600">${n} чел.</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${s.color}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Dept chart
+  const depts = [...new Set(employees.map(e=>e.dept))];
+  const deptAvgProd = depts.map(d => {
+    const emps = employees.filter(e=>e.dept===d);
+    return Math.round(emps.reduce((s,e)=>s+e.productivity,0)/emps.length);
+  });
+
+  if (deptChartInstance) deptChartInstance.destroy();
+  const ctx = document.getElementById('dept-chart').getContext('2d');
+  deptChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: depts,
+      datasets: [{
+        data: deptAvgProd,
+        backgroundColor: depts.map(d => DEPT_COLORS[d] || '#7c6dfa'),
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b6b80' } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b6b80' }, min: 0, max: 100 }
+      }
+    }
+  });
+
+  // Competency matrix
+  const deptList = [...new Set(employees.map(e=>e.dept))];
+  const table = document.getElementById('competency-matrix');
+  table.innerHTML = `<thead><tr>
+    <th style="padding:10px;text-align:left;color:var(--muted);border-bottom:1px solid var(--border)">Отдел</th>
+    ${SKILLS.map(s=>`<th style="padding:10px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border);font-size:11px;white-space:nowrap">${s.icon}</th>`).join('')}
+    <th style="padding:10px;text-align:center;color:var(--muted);border-bottom:1px solid var(--border)">Ср.%</th>
+  </tr></thead>
+  <tbody>${deptList.map(dept => {
+    const emps = employees.filter(e=>e.dept===dept);
+    const avg = Math.round(emps.reduce((s,e)=>s+e.productivity,0)/emps.length);
+    return `<tr>
+      <td style="padding:10px;font-size:14px;border-bottom:1px solid var(--border)">${dept}</td>
+      ${SKILLS.map(s=>{
+        const has = emps.filter(e=>e.skills.includes(s.id)).length;
+        const pct = Math.round(has/emps.length*100);
+        const bg = has ? `background:${s.color}${Math.round(pct/100*180).toString(16).padStart(2,'0')}` : '';
+        return `<td style="padding:10px;text-align:center;border-bottom:1px solid var(--border)">
+          <div style="width:28px;height:28px;border-radius:6px;${bg};display:flex;align-items:center;justify-content:center;margin:auto;font-size:11px;font-weight:600;color:${has?'white':'var(--muted)'}">${has||'—'}</div>
+        </td>`;
+      }).join('')}
+      <td style="padding:10px;text-align:center;border-bottom:1px solid var(--border);font-weight:700;color:var(--accent)">${avg}%</td>
+    </tr>`;
+  }).join('')}</tbody>`;
+}
+
+// ============ ACTIVITY SIMULATION ============
+let liveFeedItems = [];
+function renderActivity() {
+  renderOnlineList();
+  renderTasksList();
+  renderProdChart();
+  startSimulation();
+}
+
+function renderOnlineList() {
+  const el = document.getElementById('online-list');
+  const active = employees.filter(e=>e.status==='active');
+  if (!active.length) { el.innerHTML = '<div style="color:var(--muted);font-size:14px">Нет активных</div>'; return; }
+  el.innerHTML = active.map(e => `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="width:32px;height:32px;border-radius:8px;background:${e.color}20;color:${e.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;font-family:Syne,sans-serif;flex-shrink:0">${initials(e.name)}</div>
+      <div style="flex:1">
+        <div style="font-size:13px;font-weight:500">${e.name}</div>
+        <div style="font-size:12px;color:var(--muted)">${e.role}</div>
+      </div>
+      <span class="activity-dot active-dot"></span>
+    </div>`).join('');
+}
+
+const TASKS = [
+  'Разработка API','Код-ревью','Дизайн лендинга','Анализ данных','Встреча с клиентом',
+  'Подготовка презентации','Рекрутинг','SMM контент','Тестирование','Документация',
+  'Планирование спринта','Аналитика продаж','Обновление дашборда'
+];
+
+function renderTasksList() {
+  const el = document.getElementById('tasks-list');
+  if (!employees.length) { el.innerHTML = '<div style="color:var(--muted);font-size:14px">Нет данных</div>'; return; }
+  const tasks = Array.from({length:5}, () => {
+    const e = employees[Math.floor(Math.random()*employees.length)];
+    const t = TASKS[Math.floor(Math.random()*TASKS.length)];
+    const pct = Math.floor(Math.random()*100);
+    return { e, t, pct };
+  });
+  el.innerHTML = tasks.map(({e,t,pct}) => `
+    <div style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span>${t}</span>
+        <span style="color:${e.color};font-size:12px">${e.name.split(' ')[0]}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${e.color}"></div></div>
+    </div>`).join('');
+}
+
+function renderProdChart() {
+  if (prodChartInstance) prodChartInstance.destroy();
+  const ctx = document.getElementById('prod-chart').getContext('2d');
+  prodChartInstance = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: ['9:00','10:00','11:00','12:00','13:00','14:00','сейчас'],
+      datasets: [{
+        data: prodData,
+        borderColor: '#7c6dfa',
+        backgroundColor: 'rgba(124,109,250,0.1)',
+        fill: true,
+        tension: 0.4,
+        pointBackgroundColor: '#7c6dfa',
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b6b80', font:{size:11} } },
+        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#6b6b80' }, min: 30, max: 100 }
+      }
+    }
+  });
+}
+
+const SIM_EVENTS = [
+  e => `${e.name} завершил(а) задачу «${TASKS[Math.floor(Math.random()*TASKS.length)]}»`,
+  e => `${e.name} открыл(а) новый тикет`,
+  e => `${e.name} провёл(а) встречу в Zoom`,
+  e => `${e.name} залил(а) обновление в репозиторий`,
+  e => `${e.name} обновил(а) статус задачи`,
+  e => `${e.name} ответил(а) на ${Math.floor(Math.random()*10)+1} сообщений`,
+  e => `${e.name} опубликовал(а) отчёт`,
+  e => `${e.name} создал(а) новый дизайн`,
+];
+
+function startSimulation() {
+  if (simInterval) clearInterval(simInterval);
+  if (!simRunning) return;
+  simInterval = setInterval(() => {
+    if (!employees.length) return;
+    const e = employees[Math.floor(Math.random()*employees.length)];
+    const text = SIM_EVENTS[Math.floor(Math.random()*SIM_EVENTS.length)](e);
+
+    // Update productivity randomly
+    employees.forEach(emp => {
+      const delta = Math.floor(Math.random()*10) - 4;
+      emp.productivity = Math.max(20, Math.min(99, emp.productivity + delta));
+    });
+    save();
+
+    // Update prod chart
+    prodData.shift();
+    const avg = Math.round(employees.reduce((s,emp)=>s+emp.productivity,0)/Math.max(employees.length,1));
+    prodData.push(avg);
+    if (prodChartInstance) {
+      prodChartInstance.data.datasets[0].data = [...prodData];
+      prodChartInstance.update('none');
+    }
+
+    // Add to feed
+    eventCount++;
+    document.getElementById('event-count').textContent = `${eventCount} событий`;
+    const feedEl = document.getElementById('live-feed');
+    if (feedEl) {
+      const item = document.createElement('div');
+      item.className = 'activity-item';
+      item.style.animation = 'fadeIn 0.3s ease';
+      item.innerHTML = `
+        <div class="activity-icon" style="background:${e.color}20;color:${e.color};width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0">${initials(e.name)}</div>
+        <div>
+          <div class="activity-text">${text}</div>
+          <div class="activity-time">${new Date().toLocaleTimeString('ru')}</div>
+        </div>`;
+      feedEl.insertBefore(item, feedEl.firstChild);
+      if (feedEl.children.length > 30) feedEl.lastChild.remove();
+    }
+  }, 2500);
+}
+
+function toggleSimulation() {
+  simRunning = !simRunning;
+  const btn = document.getElementById('sim-toggle');
+  if (simRunning) {
+    btn.textContent = '⏸ Пауза';
+    startSimulation();
+  } else {
+    clearInterval(simInterval);
+    btn.textContent = '▶ Запустить';
+  }
+}
+
+// ============ MODAL ============
+let selectedSkills = {};
+
+function openAddModal() {
+  document.getElementById('modal-title-text').textContent = 'Новый сотрудник';
+  document.getElementById('edit-id').value = '';
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-role').value = '';
+  document.getElementById('inp-dept').value = 'Разработка';
+  selectedSkills = {};
+  renderSkillSelector();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const e = employees.find(x=>x.id===id);
+  if (!e) return;
+  document.getElementById('modal-title-text').textContent = 'Редактировать сотрудника';
+  document.getElementById('edit-id').value = id;
+  document.getElementById('inp-name').value = e.name;
+  document.getElementById('inp-role').value = e.role;
+  document.getElementById('inp-dept').value = e.dept;
+  selectedSkills = { ...e.levels } || {};
+  e.skills.forEach(s => { if (!selectedSkills[s]) selectedSkills[s] = 3; });
+  renderSkillSelector();
+  document.getElementById('add-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('add-modal').classList.remove('open'); }
+
+function renderSkillSelector() {
+  const sel = document.getElementById('skill-selector');
+  sel.innerHTML = SKILLS.map(s => {
+    const isSelected = selectedSkills.hasOwnProperty(s.id);
+    return `<button class="skill-toggle ${isSelected?'selected':''}" onclick="toggleSkill('${s.id}', this)"
+      style="${isSelected?`background:${s.color};border-color:${s.color}`:''}">
+      ${s.icon} ${s.name}
+    </button>`;
+  }).join('');
+  renderSkillLevels();
+}
+
+function toggleSkill(id, el) {
+  if (selectedSkills.hasOwnProperty(id)) {
+    delete selectedSkills[id];
+    el.classList.remove('selected');
+    el.style.background = '';
+    el.style.borderColor = '';
+  } else {
+    selectedSkills[id] = 3;
+    const s = SKILLS.find(x=>x.id===id);
+    el.classList.add('selected');
+    el.style.background = s.color;
+    el.style.borderColor = s.color;
+  }
+  renderSkillLevels();
+}
+
+function renderSkillLevels() {
+  const el = document.getElementById('skill-levels');
+  const skills = Object.keys(selectedSkills);
+  if (!skills.length) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div style="margin-bottom:8px;font-size:13px;color:var(--muted)">Уровень владения (1–5)</div>` +
+    skills.map(sid => {
+      const s = SKILLS.find(x=>x.id===sid);
+      const lvl = selectedSkills[sid] || 3;
+      const stars = Array.from({length:5}, (_,i) =>
+        `<div class="star ${i<lvl?'filled':''}" onclick="setSkillLevel('${sid}',${i+1})" style="${i<lvl?`background:${s.color};border-color:${s.color}`:''}">▪</div>`
+      ).join('');
+      return `<div class="skill-level-row">
+        <div class="skill-level-name">${s.icon} ${s.name}</div>
+        <div class="skill-level-stars">${stars}</div>
+        <span style="font-size:13px;color:var(--muted);width:16px;text-align:center">${lvl}</span>
+      </div>`;
+    }).join('');
+}
+
+function setSkillLevel(sid, lvl) {
+  selectedSkills[sid] = lvl;
+  renderSkillLevels();
+}
+
+function saveEmployee() {
+  const name = document.getElementById('inp-name').value.trim();
+  const role = document.getElementById('inp-role').value.trim();
+  const dept = document.getElementById('inp-dept').value;
+  if (!name) { toast('Введите имя сотрудника', 'error'); return; }
+  if (!Object.keys(selectedSkills).length) { toast('Выберите хотя бы один навык', 'error'); return; }
+
+  const editId = document.getElementById('edit-id').value;
+  const colorIdx = employees.length % AVATARS_COLORS.length;
+
+  if (editId) {
+    const idx = employees.findIndex(e=>e.id==editId);
+    if (idx>=0) {
+      employees[idx] = { ...employees[idx], name, role, dept,
+        skills: Object.keys(selectedSkills),
+        levels: { ...selectedSkills } };
+    }
+    toast('Сотрудник обновлён', 'success');
+  } else {
+    employees.push({
+      id: Date.now(), name, role, dept,
+      skills: Object.keys(selectedSkills),
+      levels: { ...selectedSkills },
+      color: AVATARS_COLORS[colorIdx],
+      productivity: Math.floor(Math.random()*30)+60,
+      status: Math.random()>0.3?'active':Math.random()>0.5?'away':'offline',
+      joinDate: new Date().toLocaleDateString('ru'),
+    });
+    toast('Сотрудник добавлен!', 'success');
+  }
+  save();
+  closeModal();
+  renderEmployees();
+  renderDashboard();
+}
+
+function deleteEmployee(id) {
+  if (!confirm('Удалить сотрудника?')) return;
+  employees = employees.filter(e=>e.id!==id);
+  save();
+  renderEmployees();
+  renderDashboard();
+  toast('Сотрудник удалён', 'success');
+}
+
+// ============ DETAIL MODAL ============
+function openDetailModal(id) {
+  const e = employees.find(x=>x.id===id);
+  if (!e) return;
+  document.getElementById('detail-name').textContent = e.name;
+  const skillsHtml = e.skills.map(sid => {
+    const s = SKILLS.find(x=>x.id===sid);
+    const lvl = e.levels?.[sid] || 3;
+    const bars = Array.from({length:5},(_,i)=>`<div style="width:8px;height:${8+i*4}px;border-radius:2px;background:${i<lvl?s.color:'var(--surface2)'}"></div>`).join('');
+    return s ? `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span class="badge skill-${sid}">${s.icon} ${s.name}</span>
+      <div style="display:flex;align-items:flex-end;gap:3px;flex:1">${bars}</div>
+      <span style="font-size:13px;color:var(--muted)">${lvl}/5</span>
+    </div>` : '';
+  }).join('');
+
+  const historyBars = Array.from({length:14},()=>Math.floor(Math.random()*40)+50).map((v,i)=>`
+    <div style="flex:1;background:${v>70?'#7c6dfa':'#7c6dfa88'};border-radius:3px;height:${v*0.8}%;title=${v}%"></div>`).join('');
+
+  document.getElementById('detail-content').innerHTML = `
+    <div style="display:flex;gap:20px;align-items:center;margin-bottom:24px">
+      <div class="emp-avatar" style="width:64px;height:64px;background:${e.color}20;color:${e.color};font-size:22px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-family:Syne,sans-serif;font-weight:700">${initials(e.name)}</div>
+      <div>
+        <div style="font-size:18px;font-family:Syne,sans-serif;font-weight:700">${e.name}</div>
+        <div style="color:var(--muted);font-size:14px">${e.role} · ${e.dept}</div>
+        <div style="margin-top:6px;font-size:13px">
+          <span class="activity-dot ${e.status==='active'?'active-dot':e.status==='away'?'away-dot':'offline-dot'}"></span>
+          ${e.status==='active'?'Онлайн':e.status==='away'?'Отошёл':'Офлайн'} · В команде с ${e.joinDate}
+        </div>
+      </div>
+      <div style="margin-left:auto;text-align:center">
+        <div style="font-family:Syne,sans-serif;font-size:32px;font-weight:700;color:${e.color}">${e.productivity}%</div>
+        <div style="font-size:12px;color:var(--muted)">продуктивность</div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:20px">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px">Продуктивность за 2 недели</div>
+      <div style="display:flex;align-items:flex-end;gap:4px;height:60px;background:var(--surface2);border-radius:10px;padding:8px">${historyBars}</div>
+    </div>
+
+    <div style="font-family:Syne,sans-serif;font-size:15px;font-weight:600;margin-bottom:12px">Компетенции</div>
+    ${skillsHtml || '<div style="color:var(--muted);font-size:14px">Нет навыков</div>'}
+
+    <div style="margin-top:20px;display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="closeDetailModal();openEditModal(${e.id})">✎ Редактировать</button>
+      <button class="btn btn-danger" onclick="closeDetailModal();deleteEmployee(${e.id})">✕ Удалить</button>
+    </div>`;
+
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function closeDetailModal() { document.getElementById('detail-modal').classList.remove('open'); }
+
+// ============ TOAST ============
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  const icon = type==='success'?'✓':'✕';
+  el.innerHTML = `<span style="color:${type==='success'?'#81c784':'#ef9a9a'}">${icon}</span> ${msg}`;
+  el.className = `toast ${type} show`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============ UTILS ============
+function initials(name) {
+  return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+}
+
+// ============ INIT ============
+seedData();
+renderDashboard();
+
+// Add fadeIn animation
+const style = document.createElement('style');
+style.textContent = '@keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}';
+document.head.appendChild(style);
+
+// Close modals on backdrop click
+document.getElementById('add-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+document.getElementById('detail-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeDetailModal();
+});
+</script>
+</body>
+</html>
